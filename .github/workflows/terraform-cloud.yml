@@ -1,0 +1,117 @@
+name: terraform-cloud.yml
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - terraform/**'
+      - '.github/workflows/terraform-cloud.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'terraform/**'
+
+env:
+  TF_CLOUD_ORGANIZATION: 'catalyst-projects'
+  TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
+  TF_WORKSPACE_DEV: "eks-catalyst-dev"
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  # ============================================
+  # TERRAFORM FORMAT CHECK
+  # ============================================
+  terraform-fmt:
+    name: Terraform Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.3
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Terraform Format Check
+        run: |
+          terraform fmt -check -recursive terraform/
+
+  # ============================================
+  # TRIGGER TERRAFORM CLOUD RUN - DEV
+  # ============================================
+  trigger-plan-dev:
+    name: Trigger Plan (Dev)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'main')
+    needs: terraform-fmt
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Terraform Init (Dev)
+        working-directory: terraform/environments/dev
+        run: terraform init
+
+      - name: Trigger Terraform Cloud Plan
+        working-directory: terraform/environments/dev
+        run: |
+          terraform plan -no-color
+          echo "✅ Plan triggered in Terraform Cloud"
+          echo "📊 View the plan at: https://app.terraform.io/app/${{ env.TF_CLOUD_ORGANIZATION }}/workspaces/${{ env.TF_WORKSPACE_DEV }}"
+
+# ============================================
+  # AUTO-APPLY TO DEV (on merge to develop)
+  # ============================================
+  apply-dev:
+    name: Apply to Dev (Terraform Cloud)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment:
+      name: development
+      url: https://app.terraform.io/app/${{ env.TF_CLOUD_ORGANIZATION }}/workspaces/${{ env.TF_WORKSPACE_DEV }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Terraform Init
+        working-directory: terraform/environments/dev
+        run: terraform init
+
+      - name: Trigger Apply in Terraform Cloud
+        working-directory: terraform/environments/dev
+        run: |
+          echo "🚀 Triggering apply in Terraform Cloud..."
+          terraform apply -auto-approve
+          echo "✅ Apply triggered successfully!"
+          echo "📊 Monitor at: https://app.terraform.io/app/${{ env.TF_CLOUD_ORGANIZATION }}/workspaces/${{ env.TF_WORKSPACE_DEV }}/runs"
+
+
+
+
+
+

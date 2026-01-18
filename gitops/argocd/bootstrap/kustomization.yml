@@ -7,7 +7,7 @@ resources:
   # Official ArgoCD installation
   - https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
   # Custom configurations
-  - install.yaml
+  - install.yml
 
 patches:
   # Change service type to LoadBalancer for easy access

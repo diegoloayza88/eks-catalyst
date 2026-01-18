@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: demo-app
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/diegoloayza88/eks-catalyst
+    targetRevision: main
+    path: demo-app/k8s
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demo
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      syncOptions:
+        - CreateNamespace=true
+        - PrunePropagationPolicy=foreground
+        - PruneLast=true
+      retry:
+        limit: 5
+        backoff:
+          duration: 5s
+          factor: 2
+          maxDuration: 3m
+
+  revisionHistoryLimit: 10
+
+  # Ignore differences in certain fields
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

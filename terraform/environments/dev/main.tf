@@ -78,7 +78,7 @@ module "eks" {
         {
           key    = "spot"
           value  = "true"
-          effect = "NoSchedule"
+          effect = "NO_SCHEDULE"
         }
       ]
 

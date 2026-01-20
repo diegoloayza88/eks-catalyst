@@ -3,7 +3,7 @@ terraform {
     organization = "catalyst-projects"
 
     workspaces {
-      name = "notifications-system-dev"
+      name = "eks-catalyst-dev"
     }
   }
 }

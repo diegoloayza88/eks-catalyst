@@ -18,15 +18,15 @@ locals {
 module "vpc" {
   source = "../../modules/vpc"
 
-  cluster_name = local.cluster_name
-  vpc_cidr = var.vpc_cidr
-  azs = local.azs
+  cluster_name    = local.cluster_name
+  vpc_cidr        = var.vpc_cidr
+  azs             = local.azs
   private_subnets = var.private_subnets
-  public_subnets = var.public_subnets
+  public_subnets  = var.public_subnets
 
   enable_nat_gateway = true
   single_nat_gateway = var.environment == "dev" ? true : false
-  enable_flow_logs = true
+  enable_flow_logs   = true
 
   tags = local.tags
 }
@@ -35,28 +35,28 @@ module "vpc" {
 module "eks" {
   source = "../../modules/eks"
 
-  cluster_name = local.cluster_name
+  cluster_name    = local.cluster_name
   cluster_version = var.cluster_version
 
-  vpc_id       = module.vpc.vpc_id
-  subnet_ids = concat(module.vpc.private_subnet_ids, module.vpc.public_subnet_ids)
+  vpc_id          = module.vpc.vpc_id
+  subnet_ids      = concat(module.vpc.private_subnet_ids, module.vpc.public_subnet_ids)
   node_subnet_ids = module.vpc.private_subnet_ids
 
-  cluster_endpoint_private_access = true
-  cluster_endpoint_public_access = true
+  cluster_endpoint_private_access      = true
+  cluster_endpoint_public_access       = true
   cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
 
-  enable_irsa = true
+  enable_irsa               = true
   cluster_enabled_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
   node_groups = {
     general = {
-      desired_size = 2
-      max_size = 5
-      min_size = 1
+      desired_size   = 2
+      max_size       = 5
+      min_size       = 1
       instance_types = ["t3.medium"]
-      capacity_type = "ON_DEMAND"
-      disk_size = 50
+      capacity_type  = "ON_DEMAND"
+      disk_size      = 50
       labels = {
         role = "general"
       }
@@ -64,21 +64,21 @@ module "eks" {
     }
 
     spot = {
-      desired_size = 1
-      max_size = 10
-      min_size = 0
+      desired_size   = 1
+      max_size       = 10
+      min_size       = 0
       instance_types = ["t3.medium", "t3a.medium", "t3.large"]
-      capacity_type = "SPOT"
-      disk_size = 50
+      capacity_type  = "SPOT"
+      disk_size      = 50
       labels = {
-        role = "spot"
+        role     = "spot"
         workload = "non-critical"
       }
       taints = [
         {
           key    = "spot"
           value  = "true"
-          effect = "NoSchedule"
+          effect = "NO_SCHEDULE"
         }
       ]
 
@@ -90,7 +90,7 @@ module "eks" {
 
 # Configure kubectl
 provider "kubernetes" {
-  host = module.eks.cluster_endpoint
+  host                   = module.eks.cluster_endpoint
   cluster_ca_certificate = module.eks.cluster_certificate_authority_data
 
   exec {
@@ -133,21 +133,21 @@ provider "helm" {
 
 # VPC CNI Add-on
 resource "aws_eks_addon" "vpc_cni" {
-  cluster_name = module.eks.cluster_id
-  addon_name   = "vpc-cni"
-  addon_version = var.vpc_cni_version
+  cluster_name                = module.eks.cluster_id
+  addon_name                  = "vpc-cni"
+  addon_version               = var.vpc_cni_version
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
-  service_account_role_arn = aws_iam_role.vpc_cni.arn
+  service_account_role_arn    = aws_iam_role.vpc_cni.arn
 
   depends_on = [module.eks]
 }
 
 # CoreDNS Add-on
 resource "aws_eks_addon" "coredns" {
-  cluster_name = module.eks.cluster_id
-  addon_name   = "coredns"
-  addon_version = var.coredns_version
+  cluster_name                = module.eks.cluster_id
+  addon_name                  = "coredns"
+  addon_version               = var.coredns_version
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
 
@@ -159,9 +159,9 @@ resource "aws_eks_addon" "coredns" {
 
 # kube-proxy Add-on
 resource "aws_eks_addon" "kube_proxy" {
-  cluster_name = module.eks.cluster_id
-  addon_name   = "kube-proxy"
-  addon_version = var.kube_proxy_version
+  cluster_name                = module.eks.cluster_id
+  addon_name                  = "kube-proxy"
+  addon_version               = var.kube_proxy_version
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
 
@@ -172,9 +172,9 @@ resource "aws_eks_addon" "kube_proxy" {
 
 # EBS CSI Driver Add-on
 resource "aws_eks_addon" "ebs_csi_driver" {
-  cluster_name = module.eks.cluster_id
-  addon_name   = "aws-ebs-csi-driver"
-  addon_version = var.ebs_csi_driver_version
+  cluster_name                = module.eks.cluster_id
+  addon_name                  = "aws-ebs-csi-driver"
+  addon_version               = var.ebs_csi_driver_version
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
 

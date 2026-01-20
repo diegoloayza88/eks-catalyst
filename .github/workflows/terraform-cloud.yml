@@ -17,7 +17,6 @@ on:
 
 env:
   TF_CLOUD_ORGANIZATION: 'catalyst-projects'
-  TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
   TF_WORKSPACE_DEV: "eks-catalyst-dev"
 
 permissions:
@@ -35,7 +34,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -58,13 +57,21 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.6.0
+          terraform_version: 1.14.3
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Create Terraform CLI Config
+        run: |
+          cat > ~/.terraformrc << EOF
+          credentials "app.terraform.io" {
+            token = "${{ secrets.TF_API_TOKEN }}"
+          }
+          EOF
 
       - name: Terraform Init (Dev)
         working-directory: terraform/environments/dev
@@ -90,13 +97,21 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.6.0
+          terraform_version: 1.14.3
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Create Terraform CLI Config
+        run: |
+          cat > ~/.terraformrc << EOF
+          credentials "app.terraform.io" {
+            token = "${{ secrets.TF_API_TOKEN }}"
+          }
+          EOF
 
       - name: Terraform Init
         working-directory: terraform/environments/dev
